@@ -1,5 +1,6 @@
 package com.assignation.services;
 
+import com.assignation.models.ApiResponse;
 import com.assignation.models.Reservation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -26,13 +27,17 @@ public class ReservationService {
 
     public List<Reservation> getAllReservations() {
         try {
-            ResponseEntity<List<Reservation>> response = restTemplate.exchange(
+            ResponseEntity<ApiResponse<Reservation>> response = restTemplate.exchange(
                 apiUrl,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<Reservation>>() {}
+                new ParameterizedTypeReference<ApiResponse<Reservation>>() {}
             );
-            return response.getBody();
+            ApiResponse<Reservation> apiResponse = response.getBody();
+            if (apiResponse != null && apiResponse.getData() != null) {
+                return apiResponse.getData();
+            }
+            return Collections.emptyList();
         } catch (Exception e) {
             System.err.println("Erreur lors de l'appel API: " + e.getMessage());
             return Collections.emptyList();
