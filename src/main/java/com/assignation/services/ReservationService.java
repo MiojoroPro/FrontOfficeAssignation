@@ -9,14 +9,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
 public class ReservationService {
 
     private final RestTemplate restTemplate;
+    
+    // Format de date du backend: "Feb 6, 2026, 3:19:00 PM"
+    private final DateTimeFormatter backendFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
     @Value("${api.reservations.url}")
     private String apiUrl;
@@ -51,12 +57,29 @@ public class ReservationService {
             return allReservations;
         }
         
+        // Convertir les dates de filtre (format YYYY-MM-DD du formulaire HTML)
+        LocalDate startDate = (dateDebut != null && !dateDebut.isEmpty()) ? LocalDate.parse(dateDebut) : null;
+        LocalDate endDate = (dateFin != null && !dateFin.isEmpty()) ? LocalDate.parse(dateFin) : null;
+        
         return allReservations.stream()
             .filter(r -> {
-                String dateReservation = r.getDateheure().substring(0, 10); // Extraire YYYY-MM-DD
-                boolean afterStart = (dateDebut == null || dateDebut.isEmpty()) || dateReservation.compareTo(dateDebut) >= 0;
-                boolean beforeEnd = (dateFin == null || dateFin.isEmpty()) || dateReservation.compareTo(dateFin) <= 0;
-                return afterStart && beforeEnd;
+                try {
+                    // Extraire la partie date du backend: "Feb 6, 2026, 3:19:00 PM" -> "Feb 6, 2026"
+                    String dateStr = r.getDateheure();
+                    // Trouver la position de la deuxième virgule pour extraire "Feb 6, 2026"
+                    int firstComma = dateStr.indexOf(',');
+                    int secondComma = dateStr.indexOf(',', firstComma + 1);
+                    String datePart = dateStr.substring(0, secondComma);
+                    
+                    LocalDate reservationDate = LocalDate.parse(datePart, backendFormatter);
+                    
+                    boolean afterStart = (startDate == null) || !reservationDate.isBefore(startDate);
+                    boolean beforeEnd = (endDate == null) || !reservationDate.isAfter(endDate);
+                    return afterStart && beforeEnd;
+                } catch (Exception e) {
+                    System.err.println("Erreur de parsing de date: " + r.getDateheure() + " - " + e.getMessage());
+                    return true; // Inclure les réservations avec dates non parsables
+                }
             })
             .collect(Collectors.toList());
     }
