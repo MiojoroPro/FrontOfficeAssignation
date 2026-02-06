@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Réservations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .filter-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-form label {
+            font-weight: bold;
+            color: #333;
+        }
+        .filter-form input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .filter-form button {
+            padding: 10px 20px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filter-form button:hover {
+            background-color: #5a6fd6;
+        }
+        .filter-form .reset-btn {
+            background-color: #6c757d;
+        }
+        .filter-form .reset-btn:hover {
+            background-color: #5a6268;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Liste des Réservations</h1>
+    
+    <form class="filter-form" method="get" action="/">
+        <div>
+            <label for="dateDebut">Date début :</label>
+            <input type="date" id="dateDebut" name="dateDebut" th:value="${dateDebut}">
+        </div>
+        <div>
+            <label for="dateFin">Date fin :</label>
+            <input type="date" id="dateFin" name="dateFin" th:value="${dateFin}">
+        </div>
+        <button type="submit">Filtrer</button>
+        <a href="/"><button type="button" class="reset-btn">Réinitialiser</button></a>
+    </form>
+    
+    <div th:if="${#lists.isEmpty(reservations)}" class="empty-message">
+        <p>Aucune réservation trouvée.</p>
+    </div>
+    
+    <table th:if="${!#lists.isEmpty(reservations)}">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Passagers</th>
+                <th>Date/Heure</th>
+                <th>Hôtel</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="reservation : ${reservations}">
+                <td th:text="${reservation.id}"></td>
+                <td th:text="${reservation.idClient}"></td>
+                <td th:text="${reservation.nbpassagers}"></td>
+                <td th:text="${reservation.dateheure}"></td>
+                <td th:text="${reservation.hotelNom}"></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
