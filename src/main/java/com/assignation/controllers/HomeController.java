@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 @Controller
@@ -22,12 +23,20 @@ public class HomeController {
     public String home(
             @RequestParam(required = false) String dateDebut,
             @RequestParam(required = false) String dateFin,
+            HttpSession session,
             Model model) {
+        
+        // Vérifier si l'utilisateur est connecté
+        Boolean isLoggedIn = (Boolean) session.getAttribute("isLoggedIn");
+        if (isLoggedIn == null || !isLoggedIn) {
+            return "redirect:/login";
+        }
         
         List<Reservation> reservations = reservationService.getReservationsByDateRange(dateDebut, dateFin);
         model.addAttribute("reservations", reservations);
         model.addAttribute("dateDebut", dateDebut);
         model.addAttribute("dateFin", dateFin);
+        model.addAttribute("userEmail", session.getAttribute("userEmail"));
         return "reservation";
     }
 }
