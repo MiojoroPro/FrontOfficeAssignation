@@ -1,14 +1,5 @@
 package com.assignation.services;
 
-import com.assignation.models.ApiResponse;
-import com.assignation.models.Reservation;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -16,10 +7,23 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.assignation.models.Reservation;
+import com.assignation.models.ReservationApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 public class ReservationService {
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     
     // Format de date du backend: "Feb 6, 2026, 3:19:00 PM"
     private final DateTimeFormatter backendFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
@@ -27,25 +31,40 @@ public class ReservationService {
     @Value("${api.reservations.url}")
     private String apiUrl;
 
+    @Value("${api.auth.token}")
+    private String authToken;
+
     public ReservationService() {
         this.restTemplate = new RestTemplate();
+        this.objectMapper = new ObjectMapper();
+    }
+
+    private HttpHeaders createAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + authToken);
+        return headers;
     }
 
     public List<Reservation> getAllReservations() {
         try {
-            ResponseEntity<ApiResponse<Reservation>> response = restTemplate.exchange(
+            HttpEntity<Void> entity = new HttpEntity<>(createAuthHeaders());
+            ResponseEntity<String> response = restTemplate.exchange(
                 apiUrl,
                 HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<ApiResponse<Reservation>>() {}
+                entity,
+                String.class
             );
-            ApiResponse<Reservation> apiResponse = response.getBody();
-            if (apiResponse != null && apiResponse.getData() != null) {
-                return apiResponse.getData();
+            String json = response.getBody();
+            ReservationApiResponse apiResponse = objectMapper.readValue(json, ReservationApiResponse.class);
+            if (apiResponse != null && apiResponse.getData() != null && apiResponse.getData().getData() != null) {
+                List<Reservation> reservations = apiResponse.getData().getData();
+                reservations.sort((r1, r2) -> Integer.compare(r1.getId(), r2.getId()));
+                return reservations;
             }
             return Collections.emptyList();
         } catch (Exception e) {
             System.err.println("Erreur lors de l'appel API: " + e.getMessage());
+            e.printStackTrace();
             return Collections.emptyList();
         }
     }
